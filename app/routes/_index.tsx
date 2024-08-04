@@ -3,8 +3,19 @@ import { json } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import dayjs from "dayjs";
 import { useMemo } from "react";
+import { db } from "~/database.server";
 
-const startingDate = "2024-01-01";
+const getAllTasks = async () => {
+  return db.query.tasks.findMany({
+    with: {
+      accomplisheds: {
+        columns: {
+          date: true,
+        },
+      },
+    },
+  });
+};
 
 export const meta: MetaFunction = () => {
   return [
@@ -14,19 +25,32 @@ export const meta: MetaFunction = () => {
 };
 
 export const loader = async () => {
-  return json({ data: ["2024-08-04"] });
+  const allTasks = await getAllTasks();
+  return json({ allTasks });
 };
 
 export default function Index() {
-  const { data } = useLoaderData<typeof loader>();
+  const data = useLoaderData<typeof loader>();
 
-  const start = dayjs(startingDate);
-  const end = start.add(80, "years");
+  return (
+    <div className="font-sans p-4">
+      <div className="flex gap-8">
+        {data.allTasks.map((task) => {
+          return <BoxGrid key={task.id} task={task} />;
+        })}
+      </div>
+    </div>
+  );
+}
 
-  const totalDays = end.diff(start, "days");
+type Task = Awaited<ReturnType<typeof getAllTasks>>[number];
+
+const BoxGrid = (props: { task: Task }) => {
+  const start = dayjs("2024-01-01");
+  const end = start.add(5, "years");
 
   const datesGroupedByYear = useMemo(() => {
-    return Array.from({ length: totalDays }, (_, i) =>
+    return Array.from({ length: end.diff(start, "days") }, (_, i) =>
       start.add(i, "days")
     ).reduce<Record<number, dayjs.Dayjs[]>>((acc, date) => {
       const year = date.year();
@@ -37,25 +61,34 @@ export default function Index() {
       acc[year].push(date);
       return acc;
     }, {});
-  }, [totalDays, start]);
+  }, [start, end]);
+
+  const accomplishedDates = new Map<string, boolean>(
+    props.task.accomplisheds.map((a) => [a.date, true])
+  );
 
   return (
-    <div className="font-sans p-4">
-      {data}
-      <div className="max-w-3xl">
-        {Object.entries(datesGroupedByYear).map(([year, dates]) => (
-          <div key={`year-${year}`} className="mb-4">
-            <div className="flex flex-wrap gap-2">
-              {dates.map((date) => (
+    <div className="max-w-3xl">
+      {Object.entries(datesGroupedByYear).map(([year, dates]) => (
+        <div key={`year-${year}`} className="mb-4">
+          <div className="flex flex-wrap gap-2">
+            {dates.map((date) => {
+              const key = date.format("YYYY-MM-DD");
+              return (
                 <div
-                  key={date.format("YYYY-MM-DD")}
-                  className={`size-4 bg-sky-400`}
+                  key={key}
+                  className={`size-4`}
+                  style={{
+                    backgroundColor: accomplishedDates.has(key)
+                      ? props.task.hexcolor
+                      : "#ddd",
+                  }}
                 />
-              ))}
-            </div>
+              );
+            })}
           </div>
-        ))}
-      </div>
+        </div>
+      ))}
     </div>
   );
-}
+};

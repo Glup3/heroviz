@@ -4,11 +4,11 @@ export const Sidebar = (props: {
   tasks: { id: number; name: string; hexcolor: string }[];
 }) => {
   return (
-    <div className="min-w-72 bg-slate-100 border-r-slate-300 border-r p-4">
+    <div className="min-w-72 bg-slate-100 border-slate-300 border-r border-b p-4">
       <nav>
-        <h1 className="font-semibold text-xl mb-4">
+        <p className="font-semibold text-xl mb-4">
           <Link to="/">HeroViz</Link>
-        </h1>
+        </p>
 
         <ul className="space-y-2">
           {props.tasks.map((task) => (

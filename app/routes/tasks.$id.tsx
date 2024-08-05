@@ -35,11 +35,11 @@ export default function TasksDetailPage() {
   const { task } = useLoaderData<typeof loader>();
 
   return (
-    <div className="font-sans p-4">
-      <div className="flex gap-8">
-        <BoxGrid key={task.id} task={task} />
-      </div>
-    </div>
+    <main className="p-4">
+      <h1 className="text-2xl font-semibold">{task.name}</h1>
+      <p className="mb-4 text-slate-500">{task.description}</p>
+      <BoxGrid key={task.id} task={task} />
+    </main>
   );
 }
 
@@ -83,6 +83,7 @@ const BoxGrid = (props: { task: Task }) => {
             dates={dates}
             hexcolor={props.task.hexcolor}
             accomplishedDates={accomplishedDates}
+            year={year}
           />
         </div>
       ))}

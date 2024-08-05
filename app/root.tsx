@@ -1,11 +1,20 @@
 import {
+  json,
   Links,
   Meta,
   Outlet,
   Scripts,
   ScrollRestoration,
+  useLoaderData,
 } from "@remix-run/react";
 import "./tailwind.css";
+import { Sidebar } from "./components/Sidebar";
+import { db } from "./database.server";
+
+export const loader = async () => {
+  const allTasks = await db.query.tasks.findMany({});
+  return json({ allTasks });
+};
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -26,5 +35,18 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  return <Outlet />;
+  const data = useLoaderData<typeof loader>();
+
+  return (
+    <div className="flex">
+      <Sidebar
+        tasks={data.allTasks.map((t) => ({
+          id: t.id,
+          name: t.name,
+          hexcolor: t.hexcolor,
+        }))}
+      />
+      <Outlet />
+    </div>
+  );
 }

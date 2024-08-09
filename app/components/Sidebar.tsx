@@ -13,7 +13,10 @@ export const Sidebar = (props: {
         <ul className="space-y-2">
           {props.tasks.map((task) => (
             <li key={`task-${task.id}`}>
-              <Link to={`tasks/${task.id}`} className="flex items-center gap-2">
+              <Link
+                to={`tasks/${task.id}`}
+                className="flex items-center gap-2 hover:underline"
+              >
                 <div
                   className="size-2 rounded-full"
                   style={{ backgroundColor: task.hexcolor }}
@@ -22,6 +25,12 @@ export const Sidebar = (props: {
               </Link>
             </li>
           ))}
+
+          <li>
+            <Link to="tasks/create" className="pl-4 hover:underline">
+              Create New Task
+            </Link>
+          </li>
         </ul>
       </nav>
     </div>

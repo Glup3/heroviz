@@ -1,7 +1,7 @@
 import { ActionFunctionArgs, json } from "@remix-run/node";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
-import { accomplisheds, db } from "~/database.server";
+import { accomplisheds, db, tasks } from "~/database.server";
 import env from "~/env";
 
 const bodySchema = z.object({
@@ -24,8 +24,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   const body = bodySchema.parse(await request.json());
 
-  const task = await db.query.accomplisheds.findFirst({
-    where: eq(accomplisheds.taskId, body.taskId),
+  const task = await db.query.tasks.findFirst({
+    where: eq(tasks.id, body.taskId),
   });
   if (!task) {
     return json({ message: "Task not found" }, 404);

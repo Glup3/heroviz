@@ -2,10 +2,15 @@ import { ActionFunctionArgs, json } from "@remix-run/node";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { accomplisheds, db } from "~/database.server";
+import env from "~/env";
 
 const bodySchema = z.object({
   taskId: z.number(),
   date: z.string().date(),
+});
+
+export const headers = () => ({
+  "WWW-Authenticate": "Basic",
 });
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -13,9 +18,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     return json({ message: "Method not allowed" }, 405);
   }
 
-  const secretToken = process.env.SECRET_TOKEN;
-  const authToken = request.headers.get("Authorization");
-  if (authToken !== secretToken) {
+  if (!isAuthorized(request)) {
     return json({ message: "Unauthorized" }, 401);
   }
 
@@ -53,4 +56,17 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 
   return json({ message: "OK" }, 200);
+};
+
+const isAuthorized = (request: Request) => {
+  const header = request.headers.get("Authorization");
+
+  if (!header) return false;
+
+  const base64 = header.replace("Basic ", "");
+  const [username, password] = Buffer.from(base64, "base64")
+    .toString()
+    .split(":");
+
+  return username === env.HEROVIZ_USERNAME && password === env.HEROVIZ_PASSWORD;
 };

@@ -1,12 +1,20 @@
 import { ActionFunctionArgs, json } from "@remix-run/node";
-import { and, eq } from "drizzle-orm";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { isAuthorized } from "~/auth";
 import { accomplisheds, db, tasks } from "~/database.server";
 
+const TIMEZONE = "Europe/Berlin";
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
 const bodySchema = z.object({
   taskId: z.number(),
-  date: z.string().date(),
+  fromDate: z.string().date(),
+  toDate: z.string().date(),
 });
 
 export const headers = () => ({
@@ -31,29 +39,20 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     return json({ message: "Task not found" }, 404);
   }
 
-  const entries = await db.query.accomplisheds.findMany({
-    where: (accomplisheds, { eq, and }) =>
-      and(
-        eq(accomplisheds.taskId, body.taskId),
-        eq(accomplisheds.date, body.date)
-      ),
-  });
-
-  if (entries.length > 0) {
-    await db
-      .delete(accomplisheds)
-      .where(
-        and(
-          eq(accomplisheds.taskId, body.taskId),
-          eq(accomplisheds.date, body.date)
-        )
-      );
-  } else {
-    await db.insert(accomplisheds).values({
-      taskId: body.taskId,
-      date: body.date,
-    });
+  const from = dayjs(body.fromDate).tz(TIMEZONE);
+  const to = dayjs(body.toDate).tz(TIMEZONE);
+  if (from.isAfter(to)) {
+    return json({ message: "Invalid from - to date range" }, 400);
   }
+
+  const dates = Array.from({ length: to.diff(from, "days") + 1 }).map(
+    (_, i) => ({
+      taskId: body.taskId,
+      date: from.add(i, "days").format("YYYY-MM-DD"),
+    })
+  );
+
+  await db.insert(accomplisheds).values(dates).onConflictDoNothing();
 
   return json({ message: "OK" }, 200);
 };
